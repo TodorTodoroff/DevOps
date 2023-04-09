@@ -1,0 +1,40 @@
+version: '3.7'
+
+volumes:
+    prometheus_data: {}
+    grafana_data: {}
+
+services:
+    prometheus:
+        image: prom/prometheus
+        container_name: prometheus
+        command:
+            - '--config.file=/etc/prometheus/prometheus.yml'
+            - '--storage.tsdb.path=/prometheus'
+        ports:
+            - 9090:9090
+        volumes:
+            - /vagrant/monitoring/prometheus:/etc/prometheus
+            - prometheus_data:/vagrant/monitoring/prometheus
+        networks:
+            - test-network
+
+    grafana:
+        image: grafana/grafana
+        container_name: grafana
+        ports:
+            - 8080:3000
+        user: "472"
+        depends_on:
+            - prometheus
+        environment:
+            - GF_SECURITY_ADMIN_USER=admin
+            - GF_SECURITY_ADMIN_PASSWORD=admin
+        volumes:
+            - grafana_data:/var/lib/grafana
+            - /vagrant/monitoring/grafana/:/etc/grafana/provisioning/datasources
+        networks:
+            - test-network
+  
+networks:
+    test-network:

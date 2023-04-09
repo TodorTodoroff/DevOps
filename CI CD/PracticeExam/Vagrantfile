@@ -1,0 +1,50 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure(2) do |config|
+    
+    config.ssh.insert_key = false
+  
+    config.vm.define "jenkins" do |jenkins|
+      jenkins.vm.box="shekeriev/centos-stream-9"
+      jenkins.vm.hostname = "vm101.do1.exam"
+      jenkins.vm.provider :virtualbox do |vb|
+        vb.customize ["modifyvm", :id, "--memory", "3072"]
+      end
+      jenkins.vm.network "private_network", ip: "192.168.99.101"
+      jenkins.vm.network "forwarded_port", guest: 8080, host: 8080
+      jenkins.vm.provision "shell", path: "add_hosts.sh"
+      jenkins.vm.provision "shell", path: "jenkins-setup.sh"
+      jenkins.vm.provision "shell", path: "node-exporter.sh"
+    end
+    
+    config.vm.define "docker" do |docker|
+      docker.vm.box = "shekeriev/centos-stream-9"
+      docker.vm.hostname = "vm102.do1.exam"
+      docker.vm.provider :virtualbox do |vb|
+        vb.customize ["modifyvm", :id, "--memory", "3072"]
+      end
+      docker.vm.network "private_network", ip: "192.168.99.102"
+      docker.vm.network "forwarded_port", guest: 8080, host: 8081
+      docker.vm.provision "shell", path: "add_hosts.sh"
+      docker.vm.provision "shell", path: "install_docker_centos.sh"
+      docker.vm.provision "shell", path: "node-exporter.sh"
+      docker.vm.provision "shell", path: "setup_gitea.sh"
+    end
+
+    config.vm.define "monitoring" do |monitoring|
+        monitoring.vm.box = "shekeriev/centos-stream-9"
+        monitoring.vm.hostname = "vm103.do1.exam"
+        monitoring.vm.provider :virtualbox do |vb|
+          vb.customize ["modifyvm", :id, "--memory", "3072"]
+        end
+        monitoring.vm.network "private_network", ip: "192.168.99.103"
+        monitoring.vm.network "forwarded_port", guest: 8080, host: 8082
+        monitoring.vm.provision "shell", path: "add_hosts.sh"
+        monitoring.vm.provision "shell", path: "install_docker_centos.sh"
+        monitoring.vm.provision "shell", inline:
+        "cd /vagrant && docker compose up -d"
+      end
+    
+  end
+

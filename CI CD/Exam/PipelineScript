@@ -1,0 +1,111 @@
+pipeline 
+{
+    agent 
+    {
+        label 'docker'
+    }
+    environment 
+    {
+        DOCKERHUB_CREDENTIALS=credentials('dockerHubID')
+    }
+
+    stages 
+    {
+        stage('Clone') 
+        {
+            steps 
+            {
+                git branch: 'main', url: 'http://192.168.99.202:3000/todor/exam'
+            }
+        }
+        stage('Prepare')
+        {
+            steps
+            {
+                sh 'docker network ls | grep exam-net || docker network create exam-net'
+
+            }
+        }
+        stage('Build')
+        {
+            steps
+            {
+                sh 'cd /home/vagrant/workspace/Exam/exam/client && docker image build -t img-client .'
+                sh 'cd /home/vagrant/workspace/Exam/exam/generator && docker image build -t img-generator .'
+                sh 'cd /home/vagrant/workspace/Exam/exam/storage && docker image build -t img-storage .'
+            }
+        }
+        stage('Run')
+        {
+            steps
+            {
+                sh 'docker container rm -f con-client || true'
+                sh 'docker container run -d --name con-client --net exam-net -p 8080:5000 img-client'
+                sh 'docker container rm -f con-storage || true'
+                sh "docker container run -d --name con-storage --net exam-net -e MYSQL_ROOT_PASSWORD='ExamPa\$\$w0rd' img-storage"
+                sh 'docker container rm -f con-generator || true'
+                sh 'docker container run -d --name con-generator --net exam-net img-generator'
+            }
+        }
+        stage('Test')
+        {
+            steps
+            {
+                script 
+                {
+                    echo 'Test #1 - reachability in test mode on port 8080'
+                    sh 'echo $(curl --write-out "%{http_code}" --silent --output /dev/null http://localhost:8080) | grep 200'
+                }
+            }
+        }
+        stage('CleanUp')
+        {
+            steps
+            {
+                sh 'docker container rm -f con-client || true'
+                sh 'docker container rm -f con-storage || true'
+                sh 'docker container rm -f con-generator || true'
+            }
+        }
+
+        stage('Login') 
+        {
+            steps 
+            {
+                sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+            }
+        }
+        stage('Push') 
+        {
+            steps 
+            {
+                sh 'docker image tag img-client todortodoroff/client'
+                sh 'docker push todortodoroff/client'
+                sh 'docker image tag img-generator todortodoroff/generator'
+                sh 'docker push todortodoroff/generator'
+                sh 'docker image tag img-storage todortodoroff/storage'
+                sh 'docker push todortodoroff/storage'
+            }
+        }
+        stage('Deploy')
+        {
+            steps
+            {
+                sh 'docker container run -d --name con-client --net exam-net -p 80:5000 todortodoroff/client'
+                sh "docker container run -d --name con-storage --net exam-net -e MYSQL_ROOT_PASSWORD='ExamPa\$\$w0rd' todortodoroff/storage"
+                sh 'docker container run -d --name con-generator --net exam-net todortodoroff/generator'                
+            }
+        }
+        stage('TestProd')
+        {
+            steps
+            {
+                script 
+                {
+                    echo 'Test #2 - reachability in production mode on port 80'
+                    sh 'echo $(curl --write-out "%{http_code}" --silent --output /dev/null http://localhost:80) | grep 200'
+                }
+            }
+        }
+    }
+}

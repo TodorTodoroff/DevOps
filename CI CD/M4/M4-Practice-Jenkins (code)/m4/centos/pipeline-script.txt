@@ -1,0 +1,47 @@
+pipeline 
+{
+    agent any
+
+    stages 
+    {
+        stage('Clone the project') 
+        {
+            steps 
+            {
+                sh '''
+                    cd /projects
+					if [ -d /projects/bgapp ]; then 
+						cd /projects/bgapp
+						git pull https://github.com/shekeriev/bgapp.git
+					else
+						git clone https://github.com/shekeriev/bgapp.git
+					fi
+                    '''
+            }
+        }
+        stage('Build the image')
+        {
+            steps
+            {
+                sh '''
+				cd /projects/bgapp 
+				docker image build -t img-web -f Dockerfile.web . 
+				docker image build -t img-db -f Dockerfile.db .
+				'''
+            }
+        }
+        stage('Run the application')
+        {
+            steps
+            {
+                sh '''
+				docker network ls | grep appnet || docker network create appnet
+                docker container rm -f web || true
+				docker container rm -f db || true
+                docker container run -d --net appnet --name web -p 9090:80 -v /projects/bgapp/web:/var/www/html:ro img-web
+				docker container run -d --net appnet --name db -e MYSQL_ROOT_PASSWORD=12345 img-db
+                '''
+            }
+        }
+    }
+}

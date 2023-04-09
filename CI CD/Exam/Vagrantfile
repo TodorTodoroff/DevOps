@@ -1,0 +1,50 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure(2) do |config|
+    
+    config.ssh.insert_key = false
+  
+    config.vm.define "pipelines" do |pipelines|
+      pipelines.vm.box="shekeriev/centos-stream-9"
+      pipelines.vm.hostname = "pipelines.do1.exam"
+      pipelines.vm.provider :virtualbox do |vb|
+        vb.customize ["modifyvm", :id, "--memory", "3072"]
+      end
+      pipelines.vm.network "private_network", ip: "192.168.99.201"
+      pipelines.vm.network "forwarded_port", guest: 8080, host: 8080
+      pipelines.vm.provision "shell", path: "add_hosts.sh"
+      pipelines.vm.provision "shell", path: "jenkins-install.sh"
+      pipelines.vm.provision "shell", path: "node-exporter.sh"
+    end
+    
+    config.vm.define "containers" do |containers|
+      containers.vm.box = "shekeriev/centos-stream-9"
+      containers.vm.hostname = "containers.do1.exam"
+      containers.vm.provider :virtualbox do |vb|
+        vb.customize ["modifyvm", :id, "--memory", "3072"]
+      end
+      containers.vm.network "private_network", ip: "192.168.99.202"
+      containers.vm.network "forwarded_port", guest: 8080, host: 8081
+      containers.vm.provision "shell", path: "add_hosts.sh"
+      containers.vm.provision "shell", path: "docker-install-containers.sh"
+      containers.vm.provision "shell", path: "node-exporter.sh"
+      containers.vm.provision "shell", path: "setup_gitea.sh"
+    end
+
+    config.vm.define "monitoring" do |monitoring|
+        monitoring.vm.box = "shekeriev/centos-stream-9"
+        monitoring.vm.hostname = "monitoring.do1.exam"
+        monitoring.vm.provider :virtualbox do |vb|
+          vb.customize ["modifyvm", :id, "--memory", "3072"]
+        end
+        monitoring.vm.network "private_network", ip: "192.168.99.203"
+        monitoring.vm.network "forwarded_port", guest: 8080, host: 8082
+        monitoring.vm.provision "shell", path: "add_hosts.sh"
+        monitoring.vm.provision "shell", path: "docker-install-monitoring.sh"
+        monitoring.vm.provision "shell", inline:
+        "cd /vagrant/monitoring && docker compose up -d" # start the compose for grafana and prometeus
+      end
+    
+  end
+
