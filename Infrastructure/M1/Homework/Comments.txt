@@ -1,0 +1,11 @@
+Modified the vagrantfile to execute ssh command and clone repository for bgapp
+
+In order to start the application first execute:
+ vagrant up --provider virtualbox
+ 
+and then 
+terraform init
+
+terraform apply
+
+application is available on http://192.168.99.100:8000/
