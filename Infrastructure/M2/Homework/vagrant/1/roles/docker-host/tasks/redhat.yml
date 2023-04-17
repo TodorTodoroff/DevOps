@@ -1,0 +1,56 @@
+- name: Add signing key
+  rpm_key:
+    key: "https://download.docker.com/linux/centos/gpg"
+    state: present
+
+- name: Add repository into repo.d list
+  yum_repository:
+    name: docker
+    description: docker repository
+    baseurl: "https://download.docker.com/linux/centos/$releasever/$basearch/stable"
+    enabled: true
+    gpgcheck: true
+    gpgkey: "https://download.docker.com/linux/centos/gpg"
+
+- name: Install Docker
+  yum:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - python3-pip
+    state: latest
+    update_cache: true
+
+- name: Start Docker
+  service:
+    name: docker
+    enabled: true
+    state: started
+
+- name: Install requests python package
+  pip:
+    name: requests
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+
+- name: Open HTTP Port in the Firewall
+  firewalld:
+    port: 80/tcp
+    permanent: true
+    state: enabled
+    immediate: true
+
+- name: Pull nginx Docker image
+  community.docker.docker_image:
+    name: nginx
+    source: pull
+
+- name: Run nginx Docker container
+  community.docker.docker_container:
+    name: nginx
+    image: nginx
+    state: started
+    ports:
+      - "80:80"
+

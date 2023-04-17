@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Change these two (remove the <> as well)
-CRED_NAME=<docker-hub-account-name>
-CRED_PASS=<docker-hub-token>
+CRED_NAME=todortodoroff
+CRED_PASS=dckr_pat_Wfopq6MPZJHxhnJs0O105lR7qkk
 
 echo "* Stop Jenkins"
 systemctl stop jenkins

@@ -1,0 +1,6 @@
+---
+- hosts: dockerservers
+  become: true
+  roles:
+    - docker-host
+

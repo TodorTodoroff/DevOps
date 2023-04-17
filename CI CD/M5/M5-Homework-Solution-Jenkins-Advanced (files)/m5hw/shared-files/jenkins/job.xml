@@ -1,8 +1,8 @@
 <?xml version='1.1' encoding='UTF-8'?>
-<flow-definition plugin="workflow-job@1174.vdcb_d054cf74a_">
+<flow-definition plugin="workflow-job@1289.vd1c337fd5354">
   <actions>
-    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobAction plugin="pipeline-model-definition@2.2064.v5eef7d0982b_e"/>
-    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction plugin="pipeline-model-definition@2.2064.v5eef7d0982b_e">
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobAction plugin="pipeline-model-definition@2.2125.vddb_a_44a_d605e"/>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction plugin="pipeline-model-definition@2.2125.vddb_a_44a_d605e">
       <jobProperties/>
       <triggers/>
       <parameters/>
@@ -12,109 +12,33 @@
   <description></description>
   <keepDependencies>false</keepDependencies>
   <properties>
-    <com.coravy.hudson.plugins.github.GithubProjectProperty plugin="github@1.34.3">
-      <projectUrl>http://192.168.99.102:3000/vagrant/bgapp/</projectUrl>
+    <com.coravy.hudson.plugins.github.GithubProjectProperty plugin="github@1.37.0">
+      <projectUrl>https://github.com/TodorTodoroff/testRepo.git/</projectUrl>
       <displayName></displayName>
     </com.coravy.hudson.plugins.github.GithubProjectProperty>
     <org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
-      <triggers>
-        <com.cloudbees.jenkins.GitHubPushTrigger plugin="github@1.34.3">
-          <spec></spec>
-        </com.cloudbees.jenkins.GitHubPushTrigger>
-        <hudson.triggers.SCMTrigger>
-          <spec></spec>
-          <ignorePostCommitHooks>false</ignorePostCommitHooks>
-        </hudson.triggers.SCMTrigger>
-      </triggers>
+      <triggers/>
     </org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
   </properties>
-  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2683.vd0a_8f6a_1c263">
-    <script>pipeline 
-{
-    agent 
-    {
-        label &apos;docker&apos;
-    }
-    environment 
-    {
-        DOCKERHUB_CREDENTIALS=credentials(&apos;docker-hub&apos;)
-    }
-    stages 
-    {
-        stage(&apos;Clone&apos;) 
-        {
-            steps 
-            {
-                git branch: &apos;main&apos;, url: &apos;http://192.168.99.102:3000/vagrant/bgapp&apos;
-            }
-        }
-        stage(&apos;Build and Run&apos;)
-        {
-            steps
-            {
-                sh &apos;docker compose -f docker-compose-build.yaml up -d&apos;
-
-            }
-        }
-        stage(&apos;Test&apos;)
-        {
-            steps
-            {
-                script 
-                {
-                    echo &apos;Test #1 - reachability&apos;
-                    sh &apos;echo $(curl --write-out &quot;%{http_code}&quot; --silent --output /dev/null http://localhost:8080) | grep 200&apos;
-                    
-                    echo &apos;Wait 10 seconds&apos;
-                    sh &apos;sleep 10&apos;
-
-                    echo &apos;Test #2 - look for Sofia&apos;
-                    sh &quot;curl --silent http://localhost:8080 | grep София&quot;
-                }
-            }
-        }
-        stage(&apos;CleanUp&apos;)
-        {
-            steps
-            {
-                sh &apos;docker compose -f docker-compose-build.yaml down&apos;
-            }
-        }
-        stage(&apos;Login&apos;)
-        {
-            steps 
-            {
-                sh &apos;echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin&apos;
-            }
-        }
-        stage(&apos;Image Build and Push&apos;) 
-        {
-            steps 
-            {
-                sh &apos;docker image build -t $DOCKERHUB_CREDENTIALS_USR/bgapp-web -f Dockerfile.web.embedded .&apos;
-                sh &apos;docker image push $DOCKERHUB_CREDENTIALS_USR/bgapp-web&apos; 
-                sh &apos;docker image build -t $DOCKERHUB_CREDENTIALS_USR/bgapp-db -f Dockerfile.db .&apos;
-                sh &apos;docker image push $DOCKERHUB_CREDENTIALS_USR/bgapp-db&apos;
-            }
-        }
-        stage(&apos;Deploy&apos;)
-        {
-            steps
-            {
-                sh &apos;docker compose -f docker-compose-deploy.yaml up -d&apos;
-            }
-        }
-    }
-    post 
-    { 
-        always 
-        { 
-            cleanWs()
-        }
-    }
-}
-</script>
-    <sandbox>true</sandbox>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsScmFlowDefinition" plugin="workflow-cps@3659.v582dc37621d8">
+    <scm class="hudson.plugins.git.GitSCM" plugin="git@5.0.0">
+      <configVersion>2</configVersion>
+      <userRemoteConfigs>
+        <hudson.plugins.git.UserRemoteConfig>
+          <url>https://github.com/TodorTodoroff/testRepo.git/</url>
+        </hudson.plugins.git.UserRemoteConfig>
+      </userRemoteConfigs>
+      <branches>
+        <hudson.plugins.git.BranchSpec>
+          <name>*/main</name>
+        </hudson.plugins.git.BranchSpec>
+      </branches>
+      <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+      <submoduleCfg class="empty-list"/>
+      <extensions/>
+    </scm>
+    <scriptPath>Jenkinsfile</scriptPath>
+    <lightweight>true</lightweight>
   </definition>
   <triggers/>
   <disabled>false</disabled>

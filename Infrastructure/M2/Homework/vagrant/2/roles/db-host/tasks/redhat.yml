@@ -1,0 +1,32 @@
+- name: Install MariaDB Server
+  dnf: 
+    name: 
+      - mariadb
+      - mariadb-server 
+      - python3-pip
+    state: present
+
+- name: Install requests python package
+  pip:
+    name: PyMySQL
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+
+- name: Start and enable MariaDB
+  service: 
+    name: mariadb 
+    state: started 
+    enabled: true
+
+- name: Open HTTP Port in the Firewall
+  firewalld:
+    port: 3306/tcp
+    permanent: true
+    state: enabled
+    immediate: true
+
+# - name: Import database
+#   community.mysql.mysql_db:
+#     name: bulgaria
+#     state: import
+#     target: /vagrant/2/m2hw/db/db_setup.sql

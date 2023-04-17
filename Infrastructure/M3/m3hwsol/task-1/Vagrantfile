@@ -1,0 +1,29 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure(2) do |config|
+    
+  config.ssh.insert_key = false
+
+  config.vm.define "docker" do |docker|
+    docker.vm.box = "shekeriev/centos-stream-9"
+    docker.vm.hostname = "docker.do2.lab"
+    docker.vm.network "private_network", ip: "192.168.99.100"
+    docker.vm.provision "shell", inline: <<EOS
+
+echo "* Install Python3 ..." 
+dnf install -y python3 python3-pip python3-distro
+
+echo "* Clean the cache ..."
+dnf clean all && rm -rf /var/cache/dnf
+EOS
+    docker.vm.synced_folder "roots/", "/srv/salt"
+    docker.vm.provision :salt do |sa|
+        sa.bootstrap_options = "-D -R repo.saltproject.io/salt -X"
+        sa.masterless = true
+        sa.minion_config = "minionfiles/minion.yml"
+        sa.run_highstate = true
+        sa.verbose = true
+    end
+  end
+end
